@@ -1,63 +1,25 @@
-import requests
-import json
+import kong
 
-api_host = "10.0.0.4"
-api_port = "9015"
-rbac_enable = False
-tls = False
-super_admin = ""
-super_passwd = ""
+httpbin = kong.Service("httpbin")
 
+print(httpbin.Route.delete('anything'))
+if httpbin.exists:
+    print("Exists, Attemping to delete")
+    print(httpbin.delete())
 
-if tls:
-    proto = "https://"
-else:
-    proto = "http://"
+create = httpbin.create("http", "httpbin.org", "80", "/anything")
 
+print("Created a host pointing to upstream host of " + str(create['host']))
 
-class Service:
+print("The " + httpbin.name + " service is using the protocol " + httpbin.protocol)
 
-    @staticmethod
-    def create():
-        c = requests.post(proto + api_host + ":" + api_port + "/services",
-                          data={'name': 'httpbin',
-                                'protocol': 'http',
-                                'host': 'httpbin.org',
-                                'port': '80',
-                                'path': '/anything'})
-        r = json.loads(c.content.decode("UTF-8"))
-        return r
-
-    @staticmethod
-    def delete(srv_name):
-        c = requests.delete(proto + api_host + ":" + api_port + "/services/" + srv_name)
-        return c.status_code
+print(httpbin.Route("httpbin").add(name="anything", paths="/anything", methods="GET", tags="test-tag", hosts="httpbin.org"))
 
 
-class Route:
 
-    @staticmethod
-    def add(srv_name):
-        c = requests.post(proto + api_host + ":" + api_port + "/services/" + srv_name + "/routes/",
-                          data={'name': 'anything',
-                                'paths': '/anything',
-                                'methods': 'GET'})
-
-class Rbac:
-
-    def __init__(self):
-        pass
-
-    class Role:
-        @staticmethod
-        def add():
-            print("adding role")
-            return None
-
-    class Users:
-        @staticmethod
-        def add():
-            return 'adding rbac user...'
-
-print(Service.delete("httpbin"))
-print(Service.create())
+for i in range(500, 999):
+    value = str(i)
+    print(httpbin.Route("httpbin").add(name=value, paths="/" + value, methods="GET", tags=["test-tag", "another-tag"]))
+for i in range(1000, 1500):
+    value = str(i)
+    print(httpbin.Route("httpbin").add(name=value, paths="/" + value, methods="GET", tags="provision"))
